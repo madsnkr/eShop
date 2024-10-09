@@ -1,0 +1,46 @@
+trigger:
+  - ci-test
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: BuildAndPublish
+    displayName: Build And Publish
+    jobs:
+      - job: CI
+        displayName: Ci
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET
+            inputs:
+              packageType: sdk
+              useGlobalJson: true
+          - script: |
+              dotnet workload update
+              dotnet workload restore
+              dotnet workload list
+            displayName: Install and Update Workloads
+          - task: DotNetCoreCLI@2
+            displayName: Restore Nuget Packages
+            inputs:
+              command: restore
+              projects: eShop.Web.slnf
+          - task: DotNetCoreCLI@2
+            displayName: Build
+            inputs:
+              command: build
+              projects: eShop.Web.slnf
+              arguments: "--configuration Release"
+          - task: DotNetCoreCLI@2
+            displayName: Publish
+            inputs:
+              command: publish
+              projects: eShop.Web.slnf
+              arguments: "--configuration Release -o $(Build.ArtifactStagingDirectory)"
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Artifact
+            inputs:
+              artifact: eShop
+              targetPath: "$(Build.ArtifactStagingDirectory)"
+              publishLocation: pipeline
